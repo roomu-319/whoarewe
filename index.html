@@ -267,10 +267,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.models import Sequential
 import tensorflow as tf
 from tensorflow.keras import layers, models
 
-# Example dataset
 sentences = [
  ["I", "love", "coding"],
  ["Dogs", "are", "great"],
@@ -286,47 +286,38 @@ tags = [
  ["DET", "NOUN", "VERB", "VERB"]
 ]
 
-# Create a vocabulary of words and tags
 word_vocab = {word: i for i, word in enumerate(set(word for sentence in sentences for word in sentence))}
 tag_vocab = {tag: i for i, tag in enumerate(set(tag for tag_list in tags for tag in tag_list))}
 
-# Convert sentences and tags to numerical format
 X = [[word_vocab[word] for word in sentence] for sentence in sentences]
 y = [[tag_vocab[tag] for tag in tag_list] for tag_list in tags]
 
-# Padding sequences to the same length
 max_len = max(len(seq) for seq in X)
 X = pad_sequences(X, maxlen=max_len, padding='post')
 y = pad_sequences(y, maxlen=max_len, padding='post')
 
-# Split the data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Create the model
 embedding_dim = 64
 num_words = len(word_vocab)
 num_tags = len(tag_vocab)
 
-# Build the model
-input_layer = layers.Input(shape=(max_len,))
-embedding_layer = layers.Embedding(input_dim=num_words, output_dim=embedding_dim)(input_layer)
-lstm_layer = layers.LSTM(64, return_sequences=True)(embedding_layer)
-output_layer = layers.Dense(num_tags, activation='softmax')(lstm_layer)
-model = models.Model(inputs=input_layer, outputs=output_layer)
+model = Sequential([
+    layers.Embedding(input_dim=num_words, output_dim=embedding_dim, input_length=max_len),
+    layers.LSTM(64, return_sequences=True),
+    layers.Dense(num_tags, activation='softmax')
+])
 
-# Compile the model
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
-# Reshape y_train for sparse categorical crossentropy
 y_train = np.expand_dims(y_train, -1)
 y_test = np.expand_dims(y_test, -1)
 
-# Train the model with logging of training history
 history = model.fit(X_train, y_train, batch_size=2, epochs=20, validation_split=0.2)
 
-# Evaluate on the test set and print metrics
 loss, accuracy = model.evaluate(X_test, y_test)
 print(f'Test Loss: {loss}, Test Accuracy: {accuracy}')
+
 
 <a href="https://colab.research.google.com/drive/16V-V_AXWt4TiOqRzWzAveY43TSD4WBCD?usp=sharing" target="_blank">
         Open Google Colab</a>
